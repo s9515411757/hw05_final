@@ -13,7 +13,6 @@ def pagination(post_list, request):
     return paginator.get_page(request.GET.get('page'))
 
 
-@cache_page(settings.SECONDS_OF_UPDATE_CACHE, key_prefix='index_page')
 def index(request):
     post_list = Post.objects.select_related('author', 'group')
     page_obj = pagination(post_list, request)
