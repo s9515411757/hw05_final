@@ -4,7 +4,6 @@ from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.cache import cache_page
 
-
 from .models import Post, Group, User, Follow
 from .forms import PostForm, CommentForm
 
@@ -40,11 +39,12 @@ def profile(request, username):
     author = User.objects.get(username=username)
     post_list = author.posts.select_related('group')
     page_obj = pagination(post_list, request)
-    following = None
     if request.user.is_authenticated:
         following = Follow.objects.filter(
             user=request.user, author=author
         ).exists()
+    else:
+        following = None
     context = {
         'page_obj': page_obj,
         'author': author,
@@ -60,8 +60,8 @@ def post_detail(request, post_id):
     )
     context = {
         'post': post,
-        'post_count': post.author.posts.all(),
-        'form': CommentForm(request.POST or None),
+        'post_count': post.author.posts.all().count(),
+        'form': CommentForm(),
         'comments': post.comments.all()
     }
     return render(request, 'posts/post_detail.html', context)
@@ -124,7 +124,7 @@ def add_comment(request, post_id):
 
 @login_required
 def follow_index(request):
-    post_list = Post.objects.select_related('author').filter(
+    post_list = Post.objects.select_related('author', 'group').filter(
         author__following__user=request.user)
     page_obj = pagination(post_list, request)
     context = {

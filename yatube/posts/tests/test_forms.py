@@ -65,9 +65,15 @@ class PostCreateFormTests(TestCase):
     def test_cant_create_existing_slug(self):
         """При отправке валидной формы со страницы создания поста
          reverse('posts:create_post') создаётся новая запись в базе данных"""
+        uploaded = SimpleUploadedFile(
+            name='small.gif',
+            content=self.small_gif,
+            content_type='image/gif'
+        )
         form_data = {
             'text': 'Тестовый пост1',
-            'group': self.group.pk
+            'group': self.group.pk,
+            'image': uploaded,
         }
         Post.objects.all().delete()
         response = self.authorized_client.post(

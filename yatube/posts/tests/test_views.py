@@ -64,6 +64,11 @@ class PostPagesTests(TestCase):
             reverse(
                 'posts:profile', kwargs={'username': cls.user.username})
         ]
+        cls.first_user = User.objects.create_user(username='first_auth')
+        Follow.objects.get_or_create(
+            user=cls.first_user,
+            author=cls.user
+        )
 
     @classmethod
     def tearDownClass(cls):
@@ -74,6 +79,8 @@ class PostPagesTests(TestCase):
         self.guest_client = Client()
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
+        self.first_authorized_client = Client()
+        self.first_authorized_client.force_login(self.first_user)
 
     def tearDown(self):
         cache.clear()
@@ -109,6 +116,20 @@ class PostPagesTests(TestCase):
                 'page_obj'
             ).object_list[0]
             self.context(response)
+
+    def test_context_follow_template(self):
+        """Проверка контекста в шаблонах follow_index"""
+        response = self.first_authorized_client.get(
+            reverse('posts:follow_index')
+        ).context.get('page_obj').object_list[0]
+        context_post = [
+            (response.text, self.post.text),
+            (response.group, self.group),
+            (response.author, self.user)
+        ]
+        for first_object, reverse_name in context_post:
+            with self.subTest(first_object=first_object):
+                self.assertEqual(first_object, reverse_name)
 
     def test_form_for_correct_post(self):
         """Проверка формы на правильный пост"""
@@ -220,7 +241,6 @@ class FollowTestsPosts(TestCase):
             description='Тестовое описание',
         )
         cls.first_user = User.objects.create_user(username='first_auth')
-        cls.second_user = User.objects.create_user(username='second_auth')
         cls.first_author = User.objects.create_user(username='first_author')
         cls.second_author = User.objects.create_user(username='second_author')
         cls.first_post = Post.objects.create(
@@ -232,6 +252,10 @@ class FollowTestsPosts(TestCase):
             author=cls.second_author,
             text='Тестовый пост',
             group=cls.group,
+        )
+        Follow.objects.get_or_create(
+            user=cls.first_user,
+            author=cls.second_author
         )
         cls.first_author_profile_follow = (
             'posts:profile_follow', [cls.first_author.username])
@@ -246,34 +270,35 @@ class FollowTestsPosts(TestCase):
     def setUp(self):
         self.guest_client = Client()
         self.first_authorized_client = Client()
-        self.second_authorized_client = Client()
         self.first_authorized_client.force_login(self.first_user)
-        self.second_authorized_client.force_login(self.second_user)
 
     def tearDown(self):
         cache.clear()
 
-    def test_follow(self):
-        """Проверка создания/удаления подписки"""
-        follow_count = Follow.objects.count()
+    def test_follow_subscribe(self):
+        """Проверка создания подписки"""
+        Follow.objects.all().delete()
         self.first_authorized_client.get(
             reverse('posts:profile_follow',
                     kwargs={'username': self.first_author.username}))
-        self.assertEqual(Follow.objects.count(),
-                         follow_count + 1)
+        self.assertEqual(Follow.objects.count(), 1)
+
+    def test_follow_unsubscribe(self):
+        """Проверка удаления подписки"""
+        follow_count = Follow.objects.count()
         self.first_authorized_client.get(
             reverse('posts:profile_unfollow',
-                    kwargs={'username': self.first_author.username})
+                    kwargs={'username': self.second_author.username})
         )
-        self.assertEqual(Follow.objects.count(), follow_count)
+        self.assertEqual(Follow.objects.count(), follow_count - 1)
 
     def test_follow_user_can_subscribe_only_once(self):
         """Проверка пользователь может подписаться только один раз"""
-        follow_count = Follow.objects.count()
+        Follow.objects.all().delete()
         self.first_authorized_client.get(
             reverse('posts:profile_follow',
                     kwargs={'username': self.first_author.username}))
-        self.assertEqual(Follow.objects.count(), follow_count + 1)
+        self.assertEqual(Follow.objects.count(), 1)
         follow_count = Follow.objects.count()
         self.first_authorized_client.get(
             reverse('posts:profile_follow',
@@ -289,27 +314,12 @@ class FollowTestsPosts(TestCase):
                     kwargs={'username': self.first_user.username}))
         self.assertEqual(Follow.objects.count(), follow_count)
 
-    def test_follow_subscription_list_context(self):
-        """Проверка на контекст списка подписок"""
-        self.first_authorized_client.get(
-            reverse('posts:profile_follow',
-                    kwargs={'username': self.first_author.username}))
-        response = self.first_authorized_client.get(
-            reverse('posts:follow_index')
-        )
-        self.assertEqual(response.context['page_obj'][0].id,
-                         self.first_post.id)
-
     def test_follow_correct_context_of_list_subscriptions_and_posts(self):
         """Проверка на корректный контекст списка подписок и постов"""
         self.first_authorized_client.get(
             reverse('posts:profile_follow',
-                    kwargs={'username': self.first_author.username}))
-        self.second_authorized_client.get(
-            reverse('posts:profile_follow',
                     kwargs={'username': self.second_author.username}))
-        response = self.second_authorized_client.get(
+        response = self.first_authorized_client.get(
             reverse('posts:follow_index')
         )
-        self.assertNotEqual(response.context['page_obj'][0].id,
-                            self.first_post.id)
+        self.assertNotIn(self.first_post, response.context['page_obj'])

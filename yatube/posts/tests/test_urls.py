@@ -25,6 +25,8 @@ class PostURLTests(TestCase):
             author=cls.user,
         )
         cls.templates_url_names = [
+            (reverse('posts:follow_index'), 'posts/index.html', 'authorized',
+             200),
             (reverse('posts:index'), 'posts/index.html', 'all', 200),
             (reverse('posts:group_list', kwargs={'slug': cls.group.slug}),
              'posts/group_list.html', 'all', 200),
@@ -47,6 +49,7 @@ class PostURLTests(TestCase):
                           '/auth/login/?next=/create/']
         cls.redirect_no_authorized = [cls.no_author, cls.authorized]
         cls.templates_names = [
+            ('/follow/', reverse('posts:follow_index')),
             ('/', reverse('posts:index')),
             (f'/group/{cls.group.slug}/', reverse(
                 'posts:group_list', kwargs={'slug': cls.group.slug})),
@@ -59,6 +62,8 @@ class PostURLTests(TestCase):
             ('/create/', reverse('posts:post_create')),
         ]
         cls.urls_uses_correct_template = [
+            (reverse('posts:follow_index'), 'posts/follow.html', 'authorized',
+             200),
             (reverse('posts:index'), 'posts/index.html', 'all', 200),
             (reverse('posts:group_list', kwargs={'slug': cls.group.slug}),
              'posts/group_list.html', 'all', 200),

@@ -1,12 +1,11 @@
 from django.contrib.auth import get_user_model
 from django.db import models
 
-from core.models import CreatedModel
 
 User = get_user_model()
 
 
-class Group(CreatedModel):
+class Group(models.Model):
     title = models.CharField(
         max_length=200,
         verbose_name="Заглавие",
@@ -21,12 +20,13 @@ class Group(CreatedModel):
         verbose_name="Название",
         help_text="Укажите описание группы"
     )
+    pub_date = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return self.title
 
 
-class Post(CreatedModel):
+class Post(models.Model):
     CONSTANT_STR = 15
     text = models.TextField(
         verbose_name="Текст",
@@ -62,7 +62,7 @@ class Post(CreatedModel):
         return self.text[:self.CONSTANT_STR]
 
 
-class Comment(CreatedModel):
+class Comment(models.Model):
     post = models.ForeignKey(
         Post,
         related_name='comments',
@@ -81,6 +81,7 @@ class Comment(CreatedModel):
         verbose_name='Текст комментария',
         help_text='Текст комментария',
     )
+    pub_date = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ('-pub_date',)
