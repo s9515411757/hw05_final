@@ -2,7 +2,6 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.core.paginator import Paginator
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
-from django.views.decorators.cache import cache_page
 
 from .models import Post, Group, User, Follow
 from .forms import PostForm, CommentForm
@@ -39,9 +38,7 @@ def profile(request, username):
     post_list = author.posts.select_related('group')
     page_obj = pagination(post_list, request)
     if request.user.is_authenticated:
-        following = Follow.objects.filter(
-            user=request.user, author=author
-        ).exists()
+        following = author.following.all()
     else:
         following = None
     context = {
