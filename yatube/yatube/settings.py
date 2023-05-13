@@ -34,7 +34,6 @@ ALLOWED_HOSTS = [
 
 QUANTITY_POSTS = 10
 
-SECONDS_OF_UPDATE_CACHE = 20
 
 # Application definition
 
