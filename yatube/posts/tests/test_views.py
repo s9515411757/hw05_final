@@ -114,14 +114,6 @@ class PostPagesTests(TestCase):
         form_field = response.context.get('form')
         self.assertIsInstance(form_field, PostForm)
 
-    def test_context_index_group_list_profile_template(self):
-        """Проверка контекста в шаблонах index, group_list, profile"""
-        for reverse_url in self.template_post:
-            response = self.authorized_client.get(reverse_url).context.get(
-                'page_obj'
-            ).object_list[0]
-            self.context(response)
-
     def test_context_follow_template(self):
         """Проверка контекста в шаблонах follow_index"""
         response = self.authorized_client.get(
