@@ -1,7 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.db import models
 
-
 User = get_user_model()
 
 
@@ -56,7 +55,7 @@ class Post(models.Model):
     )
 
     class Meta:
-        ordering = ('-pub_date', )
+        ordering = ('-pub_date',)
 
     def __str__(self):
         return self.text[:self.CONSTANT_STR]
@@ -105,3 +104,15 @@ class Follow(models.Model):
         verbose_name='Автор подписки',
         help_text='Автор подписки',
     )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=('user', 'author'),
+                name='user_and_author_unique'
+            ),
+            models.CheckConstraint(
+                check=~models.Q(author=models.F('user')),
+                name='author_and_user_are_not_the_same'
+            )
+        ]

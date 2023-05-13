@@ -11,6 +11,7 @@ class PostModelTest(TestCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.user = User.objects.create_user(username='auth')
+        cls.author = User.objects.create_user(username='author')
         cls.group = Group.objects.create(
             title='Тестовая группа',
             slug='Тестовый слаг',
@@ -28,7 +29,7 @@ class PostModelTest(TestCase):
         )
         cls.follow = Follow.objects.create(
             user=cls.user,
-            author=cls.user,
+            author=cls.author,
         )
 
     def test_models_post_group_text(self):
