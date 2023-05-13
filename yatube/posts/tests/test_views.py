@@ -114,18 +114,13 @@ class PostPagesTests(TestCase):
         form_field = response.context.get('form')
         self.assertIsInstance(form_field, PostForm)
 
-    """
-    Прошу прощения, я не понимаю почему, но у меня то запускает данный тест
-    с ошибкой, а потом без ошибки.
-    Пост: https://app.pachca.com/chats?thread_id=1003383
-        def test_context_index_group_list_profile_template(self):
-            Проверка контекста в шаблонах index, group_list, profile
-            for reverse_url in self.template_post:
-                response = self.authorized_client.get(reverse_url).context.get(
-                    'page_obj'
-                ).object_list[0]
-                self.context(response)
-    """
+    def test_context_index_group_list_profile_template(self):
+        """Проверка контекста в шаблонах index, group_list, profile"""
+        for reverse_url in self.template_post:
+            response = self.authorized_client.get(reverse_url).context.get(
+                'page_obj'
+            ).object_list[0]
+            self.context(response)
 
     def test_context_follow_template(self):
         """Проверка контекста в шаблонах follow_index"""
