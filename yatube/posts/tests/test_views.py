@@ -284,12 +284,12 @@ class FollowTestsPosts(TestCase):
 
     def test_follow_unsubscribe(self):
         """Проверка удаления подписки"""
-        follow_count = Follow.objects.count()
         self.authorized_client.get(
             reverse('posts:profile_unfollow',
                     kwargs={'username': self.author.username})
         )
-        self.assertEqual(Follow.objects.count(), follow_count - 1)
+        folow = Follow.objects.filter(author=self.author)
+        self.assertFalse(folow)
 
     def test_follow_user_can_subscribe_only_once(self):
         """Проверка пользователь может подписаться только один раз"""
