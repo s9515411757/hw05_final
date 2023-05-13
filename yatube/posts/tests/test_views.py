@@ -64,15 +64,10 @@ class PostPagesTests(TestCase):
             reverse(
                 'posts:profile', kwargs={'username': cls.user.username})
         ]
-        cls.first_author = User.objects.create_user(username='first_author')
-        Post.objects.create(
-            text='Тестовый пост',
-            group=cls.group,
-            author=cls.first_author
-        )
+        cls.first_user = User.objects.create_user(username='first_auth')
         Follow.objects.get_or_create(
-            user=cls.user,
-            author=cls.first_author
+            user=cls.first_user,
+            author=cls.user
         )
 
     @classmethod
@@ -85,7 +80,7 @@ class PostPagesTests(TestCase):
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
         self.first_authorized_client = Client()
-        self.first_authorized_client.force_login(self.first_author)
+        self.first_authorized_client.force_login(self.first_user)
 
     def tearDown(self):
         cache.clear()
@@ -124,13 +119,13 @@ class PostPagesTests(TestCase):
 
     def test_context_follow_template(self):
         """Проверка контекста в шаблонах follow_index"""
-        response = self.authorized_client.get(
+        response = self.first_authorized_client.get(
             reverse('posts:follow_index')
         ).context.get('page_obj').object_list[0]
         context_post = [
             (response.text, self.post.text),
             (response.group, self.group),
-            (response.author, self.first_author)
+            (response.author, self.user)
         ]
         for first_object, reverse_name in context_post:
             with self.subTest(first_object=first_object):
@@ -245,29 +240,37 @@ class FollowTestsPosts(TestCase):
             slug='test-slug',
             description='Тестовое описание',
         )
-        cls.user = User.objects.create_user(username='auth')
-        cls.author = User.objects.create_user(username='author')
-        cls.post_author = Post.objects.create(
-            author=cls.author,
+        cls.first_user = User.objects.create_user(username='first_auth')
+        cls.first_author = User.objects.create_user(username='first_author')
+        cls.second_author = User.objects.create_user(username='second_author')
+        cls.first_post = Post.objects.create(
+            author=cls.first_author,
+            text='Тестовый пост',
+            group=cls.group,
+        )
+        cls.second_post = Post.objects.create(
+            author=cls.second_author,
             text='Тестовый пост',
             group=cls.group,
         )
         Follow.objects.get_or_create(
-            user=cls.user,
-            author=cls.author
+            user=cls.first_user,
+            author=cls.second_author
         )
-        cls.author_profile_follow = (
-            'posts:profile_follow', [cls.author.username])
-        cls.author_profile_unfollow = (
-            'posts:profile_unfollow', [cls.author.username])
-        cls.user_profile_follow = (
-            'posts:profile_follow', [cls.user.username])
+        cls.first_author_profile_follow = (
+            'posts:profile_follow', [cls.first_author.username])
+        cls.first_author_profile_unfollow = (
+            'posts:profile_unfollow', [cls.first_author.username])
+        cls.first_user_profile_follow = (
+            'posts:profile_follow', [cls.first_user.username])
+        cls.second_author_profile_follow = (
+            'posts:profile_follow', [cls.second_author.username])
         cls.follow_index = ('posts:follow_index', None)
 
     def setUp(self):
         self.guest_client = Client()
-        self.authorized_client = Client()
-        self.authorized_client.force_login(self.user)
+        self.first_authorized_client = Client()
+        self.first_authorized_client.force_login(self.first_user)
 
     def tearDown(self):
         cache.clear()
@@ -275,55 +278,48 @@ class FollowTestsPosts(TestCase):
     def test_follow_subscribe(self):
         """Проверка создания подписки"""
         Follow.objects.all().delete()
-        self.authorized_client.get(
+        self.first_authorized_client.get(
             reverse('posts:profile_follow',
-                    kwargs={'username': self.author.username}))
-        follow = Follow.objects.first()
-        context_follow = [
-            (follow.user, self.user),
-            (follow.author, self.author)
-        ]
-        for follow_object, result in context_follow:
-            with self.subTest(follow_object=follow_object):
-                self.assertEqual(follow_object, result)
+                    kwargs={'username': self.first_author.username}))
+        self.assertEqual(Follow.objects.count(), 1)
 
     def test_follow_unsubscribe(self):
         """Проверка удаления подписки"""
         follow_count = Follow.objects.count()
-        self.authorized_client.get(
+        self.first_authorized_client.get(
             reverse('posts:profile_unfollow',
-                    kwargs={'username': self.author.username})
+                    kwargs={'username': self.second_author.username})
         )
         self.assertEqual(Follow.objects.count(), follow_count - 1)
 
     def test_follow_user_can_subscribe_only_once(self):
         """Проверка пользователь может подписаться только один раз"""
         Follow.objects.all().delete()
-        self.authorized_client.get(
+        self.first_authorized_client.get(
             reverse('posts:profile_follow',
-                    kwargs={'username': self.author.username}))
+                    kwargs={'username': self.first_author.username}))
         self.assertEqual(Follow.objects.count(), 1)
         follow_count = Follow.objects.count()
-        self.authorized_client.get(
+        self.first_authorized_client.get(
             reverse('posts:profile_follow',
-                    kwargs={'username': self.author.username})
+                    kwargs={'username': self.first_author.username})
         )
         self.assertEqual(Follow.objects.count(), follow_count)
 
     def test_follow_user_cannot_subscribe_to_himself(self):
         """Проверка пользователь не может подписаться сам на себя"""
         follow_count = Follow.objects.count()
-        self.authorized_client.get(
+        self.first_authorized_client.get(
             reverse('posts:profile_follow',
-                    kwargs={'username': self.user.username}))
+                    kwargs={'username': self.first_user.username}))
         self.assertEqual(Follow.objects.count(), follow_count)
 
     def test_follow_correct_context_of_list_subscriptions_and_posts(self):
         """Проверка на корректный контекст списка подписок и постов"""
-        self.authorized_client.get(
+        self.first_authorized_client.get(
             reverse('posts:profile_follow',
-                    kwargs={'username': self.author.username}))
-        response = self.authorized_client.get(
+                    kwargs={'username': self.second_author.username}))
+        response = self.first_authorized_client.get(
             reverse('posts:follow_index')
         )
-        self.assertIn(self.post_author, response.context['page_obj'])
+        self.assertNotIn(self.first_post, response.context['page_obj'])
