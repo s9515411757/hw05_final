@@ -92,7 +92,7 @@ class PostCreateFormTests(TestCase):
             (post.text, form_data['text']),
             (post.author, self.user),
             (post.group.pk, form_data['group']),
-            (post.image.read(), self.post.image.read()),
+            (post.image, 'posts/image.gif'),
         ]
         for first_object, first_result in form_data_result:
             with self.subTest(first_object=first_object):
