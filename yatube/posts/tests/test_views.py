@@ -113,7 +113,8 @@ class PostPagesTests(TestCase):
         self.assertIsInstance(form_field, PostForm)
 
     def test_context_index_group_list_profile_follow_template(self):
-        """Проверка контекста в шаблонах index, group_list, profile, follow_index"""
+        """Проверка контекста в шаблонах index, group_list, profile,
+        follow_index"""
         global response
         for reverse_url, user_name in self.template_post:
             if user_name == 'user':
