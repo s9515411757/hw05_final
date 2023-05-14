@@ -17,7 +17,6 @@ TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
 
 @override_settings(MEDIA_ROOT=TEMP_MEDIA_ROOT)
 class PostCreateFormTests(TestCase):
-
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -66,7 +65,7 @@ class PostCreateFormTests(TestCase):
         """При отправке валидной формы со страницы создания поста
          reverse('posts:create_post') создаётся новая запись в базе данных"""
         uploaded = SimpleUploadedFile(
-            name='small.gif',
+            name='image.gif',
             content=self.small_gif,
             content_type='image/gif'
         )
@@ -93,7 +92,7 @@ class PostCreateFormTests(TestCase):
             (post.text, form_data['text']),
             (post.author, self.user),
             (post.group.pk, form_data['group']),
-            (post.image.read(), self.small_gif),
+            (post.image.read(), self.post.image.read()),
         ]
         for first_object, first_result in form_data_result:
             with self.subTest(first_object=first_object):

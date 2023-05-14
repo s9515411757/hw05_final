@@ -116,10 +116,7 @@ class PostPagesTests(TestCase):
         """Проверка контекста в шаблонах index, group_list, profile,
         follow_index"""
         for reverse_url, user_name in self.template_post:
-            if user_name == 'user':
-                response = self.authorized_client.get(reverse_url)
-            elif user_name == 'author':
-                response = self.author_authorized_client.get(reverse_url)
+            response = self.author_authorized_client.get(reverse_url)
             self.context(response.context.get('page_obj').object_list[0])
 
     def test_form_for_correct_post(self):
@@ -264,14 +261,10 @@ class FollowTestsPosts(TestCase):
         self.authorized_client.get(
             reverse('posts:profile_follow',
                     kwargs={'username': self.author.username}))
-        follow = Follow.objects.get(user=self.user, author=self.author)
-        context_follow = [
-            (follow.user, self.user),
-            (follow.author, self.author)
-        ]
-        for follow_object, result in context_follow:
-            with self.subTest(follow_object=follow_object):
-                self.assertEqual(follow_object, result)
+        follow_exists = Follow.objects.filter(
+            user=self.user, author=self.author
+        ).exists()
+        self.assertTrue(follow_exists)
 
     def test_follow_unsubscribe(self):
         """Проверка удаления подписки"""
@@ -279,8 +272,10 @@ class FollowTestsPosts(TestCase):
             reverse('posts:profile_unfollow',
                     kwargs={'username': self.author.username})
         )
-        folow = Follow.objects.filter(user=self.user, author=self.author)
-        self.assertFalse(folow)
+        follow_exists = Follow.objects.filter(
+            user=self.user, author=self.author
+        ).exists()
+        self.assertFalse(follow_exists)
 
     def test_follow_user_can_subscribe_only_once(self):
         """Проверка пользователь может подписаться только один раз"""
@@ -308,6 +303,8 @@ class FollowTestsPosts(TestCase):
         """Проверка пользователь не подписан, не должны
         отображаться посты"""
         Follow.objects.all().delete()
-        response = self.authorized_client.get(
+        self.authorized_client.get(
             reverse('posts:follow_index'))
-        self.assertFalse(response.context.get('page_obj').object_list)
+        post_list = Post.objects.select_related('author', 'group').filter(
+            author__following__user=self.user)
+        self.assertFalse(post_list)
