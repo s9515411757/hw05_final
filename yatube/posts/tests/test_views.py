@@ -52,11 +52,14 @@ class PostPagesTests(TestCase):
             author=cls.user
         )
         cls.template_post = [
-            reverse('posts:index'),
-            reverse(
+            (reverse('posts:index'), 'user'),
+            (reverse('posts:follow_index'), 'author'),
+            (reverse(
                 'posts:group_list', kwargs={'slug': cls.group.slug}),
-            reverse(
-                'posts:profile', kwargs={'username': cls.user.username})
+             'user'),
+            (reverse(
+                'posts:profile', kwargs={'username': cls.user.username}),
+             'user')
         ]
         cls.template_group_profile = [
             reverse(
@@ -109,27 +112,15 @@ class PostPagesTests(TestCase):
         form_field = response.context.get('form')
         self.assertIsInstance(form_field, PostForm)
 
-    def test_context_index_group_list_profile_template(self):
-        """Проверка контекста в шаблонах index, group_list, profile"""
-        for reverse_url in self.template_post:
-            response = self.authorized_client.get(reverse_url).context.get(
-                'page_obj'
-            ).object_list[0]
-            self.context(response)
-
-    def test_context_follow_template(self):
-        """Проверка контекста в шаблонах follow_index"""
-        response = self.author_authorized_client.get(
-            reverse('posts:follow_index')
-        ).context.get('page_obj').object_list[0]
-        context_post = [
-            (response.text, self.post.text),
-            (response.group, self.group),
-            (response.author, self.user)
-        ]
-        for first_object, reverse_name in context_post:
-            with self.subTest(first_object=first_object):
-                self.assertEqual(first_object, reverse_name)
+    def test_context_index_group_list_profile_follow_template(self):
+        """Проверка контекста в шаблонах index, group_list, profile, follow_index"""
+        global response
+        for reverse_url, user_name in self.template_post:
+            if user_name == 'user':
+                response = self.authorized_client.get(reverse_url)
+            elif user_name == 'author':
+                response = self.author_authorized_client.get(reverse_url)
+            self.context(response.context.get('page_obj').object_list[0])
 
     def test_form_for_correct_post(self):
         """Проверка формы на правильный пост"""
@@ -273,7 +264,7 @@ class FollowTestsPosts(TestCase):
         self.authorized_client.get(
             reverse('posts:profile_follow',
                     kwargs={'username': self.author.username}))
-        follow = Follow.objects.first()
+        follow = Follow.objects.get(user=self.user, author=self.author)
         context_follow = [
             (follow.user, self.user),
             (follow.author, self.author)
@@ -288,7 +279,7 @@ class FollowTestsPosts(TestCase):
             reverse('posts:profile_unfollow',
                     kwargs={'username': self.author.username})
         )
-        folow = Follow.objects.filter(author=self.author)
+        folow = Follow.objects.filter(user=self.user, author=self.author)
         self.assertFalse(folow)
 
     def test_follow_user_can_subscribe_only_once(self):
@@ -313,12 +304,10 @@ class FollowTestsPosts(TestCase):
                     kwargs={'username': self.user.username}))
         self.assertEqual(Follow.objects.count(), follow_count)
 
-    def test_follow_correct_context_of_list_subscriptions_and_posts(self):
-        """Проверка на корректный контекст списка подписок и постов"""
-        self.authorized_client.get(
-            reverse('posts:profile_follow',
-                    kwargs={'username': self.author.username}))
+    def test_follow_user_is_not_subscribed(self):
+        """Проверка пользователь не подписан, не должны
+        отображаться посты"""
+        Follow.objects.all().delete()
         response = self.authorized_client.get(
-            reverse('posts:follow_index')
-        )
-        self.assertIn(self.post_author, response.context['page_obj'])
+            reverse('posts:follow_index'))
+        self.assertFalse(response.context.get('page_obj').object_list)
