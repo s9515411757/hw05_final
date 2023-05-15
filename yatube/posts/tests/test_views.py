@@ -52,14 +52,12 @@ class PostPagesTests(TestCase):
             author=cls.user
         )
         cls.template_post = [
-            (reverse('posts:index'), 'user'),
-            (reverse('posts:follow_index'), 'author'),
-            (reverse(
+            reverse('posts:index'),
+            reverse('posts:follow_index'),
+            reverse(
                 'posts:group_list', kwargs={'slug': cls.group.slug}),
-             'user'),
-            (reverse(
+            reverse(
                 'posts:profile', kwargs={'username': cls.user.username}),
-             'user')
         ]
         cls.template_group_profile = [
             reverse(
@@ -115,7 +113,7 @@ class PostPagesTests(TestCase):
     def test_context_index_group_list_profile_follow_template(self):
         """Проверка контекста в шаблонах index, group_list, profile,
         follow_index"""
-        for reverse_url, user_name in self.template_post:
+        for reverse_url in self.template_post:
             response = self.author_authorized_client.get(reverse_url)
             self.context(response.context.get('page_obj').object_list[0])
 
