@@ -8,7 +8,6 @@ from django.conf import settings
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.cache import cache
 
-
 from ..models import Post, Group, Follow
 from ..forms import PostForm
 
@@ -80,8 +79,6 @@ class PostPagesTests(TestCase):
         self.guest_client = Client()
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
-        self.author_authorized_client = Client()
-        self.author_authorized_client.force_login(self.author)
 
     def tearDown(self):
         cache.clear()
@@ -113,8 +110,9 @@ class PostPagesTests(TestCase):
     def test_context_index_group_list_profile_follow_template(self):
         """Проверка контекста в шаблонах index, group_list, profile,
         follow_index"""
+        self.authorized_client.force_login(self.author)
         for reverse_url in self.template_post:
-            response = self.author_authorized_client.get(reverse_url)
+            response = self.authorized_client.get(reverse_url)
             self.context(response.context.get('page_obj').object_list[0])
 
     def test_form_for_correct_post(self):
@@ -301,8 +299,6 @@ class FollowTestsPosts(TestCase):
         """Проверка пользователь не подписан, не должны
         отображаться посты"""
         Follow.objects.all().delete()
-        self.authorized_client.get(
+        response = self.authorized_client.get(
             reverse('posts:follow_index'))
-        post_list = Post.objects.select_related('author', 'group').filter(
-            author__following__user=self.user)
-        self.assertFalse(post_list)
+        self.assertNotIn(self.post_author, response.context['page_obj'])
