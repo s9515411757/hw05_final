@@ -63,3 +63,19 @@ six==1.16.0
 sorl-thumbnail==12.7.0
 Faker==12.0.1
 ```
+==========================================================================
+
+## Лицо сайта
+![alt text](https://github.com/s9515411757/hw05_final/blob/master/1.png)
+
+## Форма регистрации
+![alt text](https://github.com/s9515411757/hw05_final/blob/master/2.png)
+
+## После авторизации создаем свой тестовый пост
+![alt text](https://github.com/s9515411757/hw05_final/blob/master/3.png)
+
+## Как отображается пост с добавлением картинки
+![alt text](https://github.com/s9515411757/hw05_final/blob/master/4.png)
+
+## Отображение комментария
+![alt text](https://github.com/s9515411757/hw05_final/blob/master/5.png)
